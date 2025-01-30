@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+  backend:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      - DATABASE_URL=sqlite:///./test.db
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+celery_worker:
+  build: .
+  depends_on:
+    - redis
+    - backend
+  environment:
+    - REDIS_URL=redis://redis:6379/0
+  command: ["celery", "-A", "app.core.celery_app", "worker", "--loglevel=info"]
